@@ -13,7 +13,7 @@ class UserController extends AbstractController
     public function get(): JsonResponse
     {
         $user = $this->getUser();
-
+        
         if (!$user) {
             return $this->json([
                 'error' => 'Unauthorized',
@@ -23,7 +23,7 @@ class UserController extends AbstractController
         return $this->json([
             'user' => $user,
         ], 200, [], [
-            AbstractNormalizer::IGNORED_ATTRIBUTES => ['userIdentifier'],
+            AbstractNormalizer::IGNORED_ATTRIBUTES => ['userIdentifier', 'id'],
         ]);
     }
 }

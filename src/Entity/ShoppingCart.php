@@ -7,6 +7,7 @@ use App\Repository\ShoppingCartRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: ShoppingCartRepository::class)]
 #[ORM\Table(name: 'shopping_carts')]
@@ -15,6 +16,7 @@ class ShoppingCart
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Ignore]
     private ?int $id = null;
 
     /**
@@ -22,6 +24,9 @@ class ShoppingCart
      */
     #[ORM\OneToMany(mappedBy: 'shoppingCart', targetEntity: ShoppingCartItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $products;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?Uuid $uuid = null;
 
     public function __construct()
     {
@@ -91,6 +96,18 @@ class ShoppingCart
                 break;
             }
         }
+
+        return $this;
+    }
+
+    public function getUuid(): ?Uuid
+    {
+        return $this->uuid;
+    }
+
+    public function setUuid(?Uuid $uuid): static
+    {
+        $this->uuid = $uuid;
 
         return $this;
     }
