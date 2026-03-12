@@ -25,14 +25,12 @@ class ShoppingCartController extends AbstractController
     private function createShoppingCart(?User $user = null): ShoppingCart
     {
         $shoppingCart = new ShoppingCart();
-        $uuid         = null;
 
         if (!$user) {
-            $uuid = Uuid::v7();
+            $shoppingCart->setUuid(Uuid::v7());
         }
-
-        $shoppingCart->setUuid($uuid);
-        $user->setShoppingCart($shoppingCart);
+        
+        $user?->setShoppingCart($shoppingCart);
 
         $this->entityManager->persist($shoppingCart);
         $this->entityManager->flush();
@@ -40,10 +38,16 @@ class ShoppingCartController extends AbstractController
         return $shoppingCart;
     }
 
-    #[Route('/cart', name: 'api_shoppingcart_get', methods: ['POST'])]
+    #[Route('/cart', name: 'api_shoppingcart_get', methods: ['GET'])]
     public function get(Request $request): JsonResponse
     {
         try {
+            $payload = json_decode($request->getContent(), true) ?? null;
+
+//          if (!$payload) {
+//              throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
+//          }
+
             $user = $this->getUser();
             $wantsToAuthenticate = $request->headers->get('Authorization') ?? null;
 
@@ -51,23 +55,18 @@ class ShoppingCartController extends AbstractController
                 throw new \Exception('Unauthorized', JsonResponse::HTTP_UNAUTHORIZED);
             }
 
-            $payload = json_decode($request->getContent(), true) ?? null;
-
-            if (!$payload) {
-                throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
-            }
-
             if (!$wantsToAuthenticate) {
-                $uuid = $payload['uuid'];
+                $uuid = $payload['uuid'] ?? null;
 
                 if (!$uuid) {
-                    throw new \Exception('No UUID found in payload', JsonResponse::HTTP_BAD_REQUEST);
-                }
+                    // If not UUID is provided, we expect the user to have no shopping cart yet either
+                    $shoppingCart = $this->createShoppingCart();
+                } else {
+                    $shoppingCart = $this->shoppingCartRepository->findOneBy(['uuid' => $uuid]) ?? null;
 
-                $shoppingCart = $this->shoppingCartRepository->findOneBy(['uuid' => $uuid]) ?? null;
-
-                if (!$shoppingCart) {
-                    throw new \Exception('Cart does not exist', JsonResponse::HTTP_NOT_FOUND);
+                    if (!$shoppingCart) {
+                        throw new \Exception('No cart found', JsonResponse::HTTP_NOT_FOUND);
+                    }
                 }
 
                 return $this->json([
@@ -97,26 +96,27 @@ class ShoppingCartController extends AbstractController
         ], JsonResponse::HTTP_OK);
     }
 
-    // TODO: fix this method below
-    #[Route('/cart', name: 'api_shoppingcart_add', methods: ['PATCH'])]
+    #[Route('/cart', name: 'api_shoppingcart_add', methods: ['POST'])]
     public function add(Request $request): JsonResponse
     {
         try {
-            $user = $this->getUser();
-
-            if (!$user) {
-                throw new \Exception('Unauthorized', JsonResponse::HTTP_UNAUTHORIZED);
-            }
-
             $payload = json_decode($request->getContent(), true) ?? null;
 
-            if (!$payload) {
-                throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
+//          if (!$payload) {
+//              throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
+//          }
+
+            $user = $this->getUser();
+            $wantsToAuthenticate = $request->headers->get('Authorization') ?? null;
+
+            if (!$user && $wantsToAuthenticate) {
+                throw new \Exception('Unauthorized', JsonResponse::HTTP_UNAUTHORIZED);
             }
 
             $product  = $payload['product'] ?? null;
             $quantity = $payload['quantity'] ?? 1;
             $slug     = $product['slug'] ?? $payload['slug'] ?? null;
+            $uuid     = $payload['uuid'] ?? null;
             
             if (!$product && !$slug) {
                 throw new \Exception('No product found in payload', JsonResponse::HTTP_BAD_REQUEST);
@@ -127,6 +127,9 @@ class ShoppingCartController extends AbstractController
             if (!$slug) {
                 throw new \Exception('No slug found in payload', JsonResponse::HTTP_BAD_REQUEST);
             }
+            if (!$user && !$uuid) {
+                throw new \Exception('A UUID is required for guests', JsonResponse::HTTP_BAD_REQUEST);
+            }
 
             // Verify wether product actually exists
             $productExists = $this->productRepository->findOneBy(['slug' => $slug]);
@@ -136,10 +139,14 @@ class ShoppingCartController extends AbstractController
             }
 
             // Add product to cart
-            $shoppingCart = $user->getShoppingCart();
+            if ($user) {
+                $shoppingCart = $user->getShoppingCart();
+            } else {
+                $shoppingCart = $this->shoppingCartRepository->findOneBy(['uuid' => $uuid]);
+            }
 
             if (!$shoppingCart) {
-                $shoppingCart = $this->createShoppingCart($user);
+                $shoppingCart = $this->createShoppingCart($user ?? null);
             }
 
             $shoppingCart->addProduct($productExists, $quantity);
@@ -161,21 +168,40 @@ class ShoppingCartController extends AbstractController
         ], JsonResponse::HTTP_OK);
     }
 
-/*
-    #[Route('/cart', name: 'api_cart', methods: ['PATCH'])]
+    #[Route('/cart', name: 'api_cart_update', methods: ['PATCH'])]
     public function update(Request $request): JsonResponse
     {
-        $user = $this->getUser();
+        try {
+            $payload = json_decode($request->getContent(), true) ?? null;
 
-        if (!$user) {
-            throw new \Exception('Unauthorized', JsonResponse::HTTP_UNAUTHORIZED);
+    //      if (!$payload) {
+    //          throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
+    //      }
+
+            $user = $this->getUser();
+            $wantsToAuthenticate = $request->headers->get('Authorization') ?? null;
+
+            if (!$user && $wantsToAuthenticate) {
+                throw new \Exception('Unauthorized', JsonResponse::HTTP_UNAUTHORIZED);
+            }
+
+            $product     = $payload['product'] ?? null;
+            $newQuantity = $payload['quantity'] ?? null;
+            $slug        = $product['slug'] ?? $payload['slug'] ?? null;
+            $uuid        = $payload['uuid'] ?? null;
+
+            // TODO: finish adding product(s) to cart :-)
+            if ($newQuantity === 0) {}
+        } catch (\Throwable $th) {
+            return $this->json([
+                'error' => $th->getMessage(),
+            ], $th->getCode() ?: JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        $payload = json_decode($request->getContent(), true) ?? null;
+        $noun = ($product || $slug || count($products) === 1) ? 'product' : 'products';
 
-        if (!$payload) {
-            throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
-        }
+        return $this->json([
+            'message' => 'Successfully updated ' . $noun . ' in cart',
+        ], JsonResponse::HTTP_OK);
     }
-*/
 }

@@ -7,7 +7,6 @@ use App\Repository\ShoppingCartRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: ShoppingCartRepository::class)]
 #[ORM\Table(name: 'shopping_carts')]
@@ -26,7 +25,7 @@ class ShoppingCart
     private Collection $products;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?Uuid $uuid = null;
+    private ?string $uuid = null;
 
     public function __construct()
     {
@@ -81,31 +80,24 @@ class ShoppingCart
         return $this;
     }
 
-    public function removeProduct(Product $product, ?int $quantity = 1): static
+    public function removeProduct(Product $product): static
     {
         foreach ($this->products as $item) {
             if ($item->getProduct() === $product) {
-                $oldQuantity = $item->getQuantity();
-
-                if (!$quantity || $oldQuantity - $quantity <= 0) {
-                    $this->products->removeElement($item);
-                } else {
-                    $item->setQuantity($oldQuantity - $quantity);
-                }
-
-                break;
+                $this->products->removeElement($item);
+                return $this;
             }
         }
 
         return $this;
     }
 
-    public function getUuid(): ?Uuid
+    public function getUuid(): ?string
     {
         return $this->uuid;
     }
 
-    public function setUuid(?Uuid $uuid): static
+    public function setUuid(?string $uuid): static
     {
         $this->uuid = $uuid;
 
