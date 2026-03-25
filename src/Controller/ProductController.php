@@ -12,6 +12,9 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ProductController extends AbstractController
 {
+    private $MIN_QUANTITY = 1;
+    private $MAX_QUANTITY = 50;
+
     public function __construct(
         private readonly ProductRepository $productRepository,
         private readonly ProductService    $productService,
@@ -32,9 +35,12 @@ class ProductController extends AbstractController
         $quantity     = (int) $payload['quantity'];
         $encodedToken = $payload['token'] ?? null; // The clientside sends a Base64 string of the ID of the last product they fetched
 
-        if ($quantity > 50 || $quantity < 1) {
+        if ($quantity < $this->MIN_QUANTITY || $quantity > $this->MAX_QUANTITY) {
+            $error = $quantity < $this->MIN_QUANTITY ? 'Smallest allowed quantity is ' . $this->MIN_QUANTITY
+                                                     : 'Largest allowed quantity is ' . $this->MAX_QUANTITY;
+
             return $this->json([
-                'error' => 'Invalid quantity (1-50)',
+                'error' => $error,
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
@@ -82,7 +88,6 @@ class ProductController extends AbstractController
         return $this->json([
             'token'    => $token,
             'products' => $products,
-            'has_more' => $hasMore,
         ]);
     }
 
