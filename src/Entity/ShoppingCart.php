@@ -58,6 +58,7 @@ class ShoppingCart
     public function addProduct(Product $product, ?int $quantity = 1): static
     {
         $shoppingCartItem = new ShoppingCartItem();
+
         $shoppingCartItem->setProduct($product);
         $shoppingCartItem->setQuantity($quantity);
         $shoppingCartItem->setShoppingCart($this);
@@ -65,15 +66,21 @@ class ShoppingCart
         if (!$this->products->contains($shoppingCartItem)) {
             $this->products->add($shoppingCartItem);
         } else {
-            // TODO: Updating product should happen in controller.
-            // ADD: throw error here
-            foreach ($this->products as $item) {
-                if ($item->getProduct() === $product) {
-                    $oldQuantity = $item->getQuantity();
-                    $item->setQuantity($oldQuantity + $quantity);
+            // Update product quantity instead
+            $this->updateProduct($product);
+        }
 
-                    break;
-                }
+        return $this;
+    }
+
+    public function updateProduct(Product $product, int $quantity): static
+    {
+        foreach ($this->products as $item) {
+            if ($item->getProduct() === $product) {
+                $oldQuantity = $item->getQuantity();
+                $item->setQuantity($oldQuantity + $quantity);
+
+                break;
             }
         }
 
@@ -85,7 +92,8 @@ class ShoppingCart
         foreach ($this->products as $item) {
             if ($item->getProduct() === $product) {
                 $this->products->removeElement($item);
-                return $this;
+                
+                break;
             }
         }
 

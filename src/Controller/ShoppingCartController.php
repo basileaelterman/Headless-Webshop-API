@@ -50,12 +50,16 @@ class ShoppingCartController extends AbstractController
     {
         try {
             $payload = json_decode($request->getContent(), true) ?? null;
+            $quantity = $payload['quantity'] ?? 1;
 
-            $quantity     = $payload['quantity'] ?? 1;
+            if ($quantity <= 0) {
+                throw new \Exception('Invalid quantity', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
             $product      = $this->productService->getProduct();
             $shoppingCart = $this->shoppingCartService->getShoppingCart($payload);
 
-            $shoppingCart->addProduct($productExists, $quantity);
+            $shoppingCart->addProduct($product, $quantity);
 
             $this->entityManager->persist($shoppingCart);
             $this->entityManager->flush();
@@ -66,7 +70,7 @@ class ShoppingCartController extends AbstractController
         }
 
         return $this->json([
-            'message' => 'Successfully added product to cart',
+            'message' => 'Successfully added product(s) to cart',
             'cart'    => [
                 'uuid'     => $shoppingCart->getUuid(),
                 'products' => $shoppingCart->getProducts(),
@@ -79,20 +83,19 @@ class ShoppingCartController extends AbstractController
     {
         try {
             $payload = json_decode($request->getContent(), true) ?? null;
-            
-            $shoppingCart = $this->shoppingCartService->getShoppingCart();
-            $product      = $this->productService->getProduct();
             $newQuantity  = $payload['quantity'] ?? null;
 
             if (!$newQuantity) {
                 throw new \Exception('No quantity found in payload', JsonResponse::HTTP_BAD_REQUEST);
             }
-
             if ($newQuantity <= 0) {
-                $shoppingCart->removeProduct($product);
-            } else {
-                $shoppingCart->addProduct($product);
+                throw new \Exception('Invalid quantity', JsonResponse::HTTP_BAD_REQUEST);
             }
+            
+            $shoppingCart = $this->shoppingCartService->getShoppingCart();
+            $product      = $this->productService->getProduct();
+
+            $shoppingCart->updateProduct($product);
 
             $this->entityManager->persist($shoppingCart);
             $this->entityManager->flush();
@@ -102,12 +105,11 @@ class ShoppingCartController extends AbstractController
             ], $th->getCode() ?: JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        $noun        = ($product || $slug || count($products) === 1) ? 'product' : 'products';
         $verb        = $newQuantity > 0 ? 'updated' : 'deleted';
         $preposition = $newQuantity > 0 ? 'in' : 'from';
 
         return $this->json([
-            'message' => 'Successfully '. $verb . ' ' . $noun . ' ' . $preposition . ' cart',
+            'message' => 'Successfully '. $verb . ' product(s) ' . $preposition . ' cart',
             'cart'    => [
                 'uuid'     => $shoppingCart->getUuid(),
                 'products' => $shoppingCart->getProducts(),
@@ -122,7 +124,7 @@ class ShoppingCartController extends AbstractController
             $shoppingCart = $this->shoppingCartService->getShoppingCart();
             $product      = $this->productService->getProduct();
 
-            $shoppingCart->removeProduct($productExists);
+            $shoppingCart->removeProduct($product);
 
             $this->entityManager->persist($shoppingCart);
             $this->entityManager->flush();
