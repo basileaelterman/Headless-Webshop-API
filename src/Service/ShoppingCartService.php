@@ -10,7 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Uid\Uuid;
 
-class ShoppingCartService 
+class ShoppingCartService extends AbstractController
 {
     public function __construct(
         private readonly ShoppingCartRepository $shoppingCartRepository,
@@ -47,8 +47,9 @@ class ShoppingCartService
         return $shoppingCart;
     }
 
-    private function createShoppingCart(?User $user = null): ?ShoppingCart
+    private function createShoppingCart(): ?ShoppingCart
     {
+        $user         = $this->getUser();
         $shoppingCart = new ShoppingCart();
 
         if (!$user) {
@@ -56,6 +57,17 @@ class ShoppingCartService
         }
         
         $user?->setShoppingCart($shoppingCart);
+
+        $this->entityManager->persist($shoppingCart);
+        $this->entityManager->flush();
+
+        return $shoppingCart;
+    }
+
+    private function resetShoppingCart(): ?ShoppingCart
+    {
+        $shoppingCart = $this->getShoppingCart();
+        $shoppingCart->clearShoppingCart();
 
         $this->entityManager->persist($shoppingCart);
         $this->entityManager->flush();

@@ -37,6 +37,13 @@ class ShoppingCart
         return $this->id;
     }
 
+    public function clearShoppingCart(): static
+    {
+        $this->products->clear();
+
+        return $this;
+    }
+
     public function getProducts(): ArrayCollection
     {   
         $products = [];
