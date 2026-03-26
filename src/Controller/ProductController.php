@@ -56,8 +56,6 @@ class ProductController extends AbstractController
             }
         }
 
-        $criteria = $lastId ? ['id' => ['<', $lastId]] : [];
-
         try {
             $queryBuilder = $this->productRepository->createQueryBuilder('product')
                                                     ->orderBy('product.id', 'DESC')
@@ -69,8 +67,7 @@ class ProductController extends AbstractController
             }
 
             $products = $queryBuilder->getQuery()->getResult();
-
-            $hasMore = count($products) > $quantity;
+            $hasMore  = count($products) > $quantity;
 
             if ($hasMore) {
                 array_pop($products);

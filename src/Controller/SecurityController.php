@@ -2,46 +2,69 @@
 
 namespace App\Controller;
 
+use App\DTO\UserDTO;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class SecurityController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository         $userRepository,
+        private readonly UserService            $userService,
     ) {
     }
 
     #[Route('/register', name: 'api_register', methods: ['POST'])]
-    public function register(Request $request): JsonResponse
+    public function register(Request $request, ValidatorInterface $validatorInterface): JsonResponse
     {
-        $payload = json_decode($request->getContent(), true);
+        $payload = json_decode($request->getContent(), true) ?? null;
 
-        $email    = $payload['email'] ?? null;
-        $password = $payload['password'] ?? null;
+        if (!$payload) {
+            return new JsonResponse([
+                'error' => 'Invalid payload',
+            ], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        $email    = $payload['email'];
+        $password = $payload['password'];
+
+        // Validate input
+        $userDTO = new UserDTO();
+        $userDTO->setEmail($email);
+        $userDTO->setPassword($password);
+        
+        $errors = $validatorInterface->validate($userDTO);
+
+        if (count($errors) > 0) {
+            $messages = [];
+
+            foreach ($errors as $violation) {
+                $messages[$violation->getPropertyPath()][] = $violation->getMessage();
+            }
+
+            return new JsonResponse([
+                'errors'  => $messages,
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         try {
-            // Verify payload content
-            if (!$email || !$password) {
-                throw new \Exception('Invalid payload', JsonResponse::HTTP_BAD_REQUEST);
-            }
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                throw new \Exception('Invalid email format', JsonResponse::HTTP_BAD_REQUEST);
-            }
-
-            $userExists = $this->userRepository->findOneBy(['email' => $email]);
+            // Check if email isn't already taken
+            $userExists = $this->userService->getUserByEmail($email);
 
             if ($userExists) {
-                throw new \Exception('User already exists', JsonResponse::HTTP_CONFLICT);
+                return new JsonResponse([
+                    'error' => 'User already exists',
+                ], JsonResponse::HTTP_CONFLICT);
             }
-            
-            // Store user in database
+
             $user = new User();
             $user->setEmail($email);
             $user->setPassword(password_hash($password, PASSWORD_BCRYPT));
@@ -50,11 +73,11 @@ class SecurityController extends AbstractController
             $this->entityManager->flush();
         } catch (\Throwable $th) {
             return new JsonResponse([
-                'error' => $th->getMessage(),
-            ], $th->getCode());
+                'error' => 'An unexpected error occured',
+            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        return new JsonResponse([
+        return $this->json([
             'message' => 'User registered successfully',
         ], JsonResponse::HTTP_CREATED);
     }
