@@ -6,10 +6,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class UserDTO {
     #[Assert\Email(message: 'Invalid email format')]
-    #[Assert\NotBlank(message: 'An email is required')]
+    #[Assert\NotNull(message: 'An email is required')]
     private ?string $email = null;
 
-    #[Assert\NotBlank(message: 'A password is required')]
+    #[Assert\NotNull(message: 'A password is required')]
     private ?string $password = null;
 
     public function getEmail(): ?string

@@ -33,8 +33,8 @@ class SecurityController extends AbstractController
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $email    = $payload['email'];
-        $password = $payload['password'];
+        $email    = $payload['email'] ?? null;
+        $password = $payload['password'] ?? null;
 
         // Validate input
         $userDTO = new UserDTO();
@@ -65,6 +65,7 @@ class SecurityController extends AbstractController
                 ], JsonResponse::HTTP_CONFLICT);
             }
 
+            // Create and store the user
             $user = new User();
             $user->setEmail($email);
             $user->setPassword(password_hash($password, PASSWORD_BCRYPT));

@@ -9,7 +9,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 class UserController extends AbstractController
 {
-    #[Route('/user', name: 'api_user', methods: ['POST'])]
+    #[Route('/user', name: 'api_user', methods: ['GET'])]
     public function get(): JsonResponse
     {
         $user = $this->getUser();
