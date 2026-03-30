@@ -41,10 +41,13 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        - { path: ^/login,     roles: PUBLIC_ACCESS }
-        - { path: ^/cart,      roles: PUBLIC_ACCESS }
-        - { path: ^/register,  roles: PUBLIC_ACCESS }
-        - { path: ^/,          roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/cart,     roles: PUBLIC_ACCESS }
+        - { path: ^/health,   roles: PUBLIC_ACCESS }
+        - { path: ^/login,    roles: PUBLIC_ACCESS }
+        - { path: ^/product,  roles: PUBLIC_ACCESS }
+        - { path: ^/products, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/,         roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

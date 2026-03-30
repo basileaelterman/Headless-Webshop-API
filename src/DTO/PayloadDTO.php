@@ -6,7 +6,10 @@ use App\DTO\AbstractDTO;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class PayloadDTO extends AbstractDTO {
-    #[Assert\Text(message: 'Category must be a string')]
+    #[Assert\Type(
+        type: 'string',
+        message: 'Category must be a string',
+    )]
     private ?string $category;
 
     #[Assert\GreaterThan(
@@ -15,9 +18,9 @@ class PayloadDTO extends AbstractDTO {
     )]
     private ?float $minPrice;
 
-    #[Assert\GreaterThan(
+    #[Assert\GreaterThanOrEqual(
         value: 0,
-        message: 'Maximum price must be greater than minPrice',
+        message: 'Maximum price must be greater than {{ compared_value }}',
     )]
     private ?float $maxPrice;
 
@@ -28,7 +31,6 @@ class PayloadDTO extends AbstractDTO {
     private ?int $quantity;
 
     #[Assert\Integer(message: 'Token is invalid')]
-    // Not false, is truthy
     #[Assert\GreaterThan(
         value: 0,
         message: 'Token is invalid',
@@ -65,7 +67,7 @@ class PayloadDTO extends AbstractDTO {
 
     public function setToken(?string $token): static
     {
-        $this->token = base64_decode($token, true);
+        $this->token = (int) base64_decode($token, true);
 
         return $this;
     }

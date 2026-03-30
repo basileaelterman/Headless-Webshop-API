@@ -41,17 +41,11 @@ class SecurityController extends AbstractController
         $userDTO->setEmail($email);
         $userDTO->setPassword($password);
         
-        $errors = $validatorInterface->validate($userDTO);
+        $violations = $userDTO->getViolations();
 
-        if (count($errors) > 0) {
-            $messages = [];
-
-            foreach ($errors as $violation) {
-                $messages[$violation->getPropertyPath()][] = $violation->getMessage();
-            }
-
+        if ($violations) {
             return new JsonResponse([
-                'errors'  => $messages,
+                'error' => 'Invalid payload',
             ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 

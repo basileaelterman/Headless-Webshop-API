@@ -1,18 +1,29 @@
 <?php
 
-namespace App\Helper;
+namespace App\DTO;
 
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class AbstractDTO {
-    public function getViolations(ValidatorInterface $validatorInterface): ?array
+class AbstractDTO
+{
+    private ?ValidatorInterface $validator = null;
+
+    public function setValidator(ValidatorInterface $validator): void
     {
-        $violations = $validatorInterface->validate($this);
+        $this->validator = $validator;
+    }
+
+    public function getViolations(): ?array
+    {
+        if (!$this->validator) {
+            throw new \LogicException('Validator not set.');
+        }
+
+        $violations = $this->validator->validate($this);
 
         if (count($violations) > 0) {
             $messages = [];
 
-            // Store and return violation messages
             foreach ($violations as $violation) {
                 $messages[$violation->getPropertyPath()][] = $violation->getMessage();
             }
