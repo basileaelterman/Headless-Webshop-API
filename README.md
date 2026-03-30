@@ -1,27 +1,24 @@
 # Headless Webshop API
 
-This is a **personal learning project** focused on building the backend architecture for a modern e-commerce platform. By following a "headless" approach, this API serves as the centralized engine for product data, cart management, and order processing, allowing any frontend to connect to it.
+**Important:** This is a personal project in order to learn how APIs work and to better understand security. I chose to make this with Symfony 8 (PHP) since it's very robust overall and a solid choice for large, complex APIs.
 
 ---
 
-## 🏗 Project Goal
-The objective of this project is to understand how to manage complex relational data (products, categories, users) and provide a secure, dead simple, and scalable interface for client-side applications.
-
-## 🚀 Key Features
+## Key Features
 - **Product Catalog**: Read operations for safely fetching products from a database.
-- **Dynamic Filtering**: Fetch products by category, price range, or availability.
-- **Cart Logic**: State management for adding/removing items and calculating totals. Both for logged in and not logged in users.
-- **Authentication**: Secure endpoints for user profiles and order history.
+- **Dynamic Filtering**: Fetch products by category, price range, name, slug.
+- **Cart Logic**: State management for performing CRUD operations on items and calculating totals. Both for logged in and not logged in users.
+- **Authentication**: Secure endpoints for user profiles.
 
-## 🛠 Tech Stack
-* **Runtime/Language:** PHP 8.4
-* **Framework:** Symfony 8
-* **Database:** MySQL 9.2
-* **Auth:** JWT
+## Tech Stack I Used
+* **Language:** PHP (8.4)
+* **Framework:** Symfony (8)
+* **Database:** MySQL (9.2)
+* **Authentication:** JWT
 
 ---
 
-## Getting Started
+If you're curious to check, stress test or even tweak some things, feel free to clone this project:
 
 1. **Clone the repo:**
    ```bash
@@ -34,13 +31,16 @@ The objective of this project is to understand how to manage complex relational 
    ```
    
 3. **Configure environment:**
-   Create or configure an <code>.env</code> file to connect it to your database
+   Configure an <code>.env</code> file to connect it to your database. Use <code>.env.example</code> as a starting point.
 
 4. **Run the server:**
    ```bash
    symfony serve
    ```
 
+After you've done all this, you can write tests to push the API to it's absolute limits, fix some mistakes I made (please let me know if there are any!) or just continue building from where I left off.
+
 ---
 
-**Note:** Again, this is a personal project for educational purposes. I am not accepting code contributions at this time, but I am always open to advice and feedback!
+## [LICENSE](LICENSE)
+This project is available under the [MIT-LICENSE](LICENSE). Too unbothered to fully explain what you can or cannot do with projects under this license, so feel free to read the license. 😉
