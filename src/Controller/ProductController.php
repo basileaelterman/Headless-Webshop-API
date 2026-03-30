@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\Product;
+use App\Exception\DatabaseException;
+use App\Exception\PayloadException;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,83 +24,38 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products', name: 'api_products', methods: ['GET'])]
-    public function getProducts(Request $request): JsonResponse
+    public function getProducts(): JsonResponse
     {
-        $payload = json_decode($request->getContent(), true);
-
-        if (!$payload) {
-            return $this->json([
-                'error' => 'Invalid payload',
-            ], JsonResponse::HTTP_BAD_REQUEST);
-        }
-
-        $quantity     = (int) $payload['quantity'];
-        $encodedToken = $payload['token'] ?? null; // The clientside sends a Base64 string of the ID of the last product they fetched
-
-        if ($quantity < $this->MIN_QUANTITY || $quantity > $this->MAX_QUANTITY) {
-            $error = $quantity < $this->MIN_QUANTITY ? 'Smallest allowed quantity is ' . $this->MIN_QUANTITY
-                                                     : 'Largest allowed quantity is ' . $this->MAX_QUANTITY;
-
-            return $this->json([
-                'error' => $error,
-            ], JsonResponse::HTTP_BAD_REQUEST);
-        }
-
-        $lastId = null;
-
-        if ($encodedToken) {
-            $lastId = base64_decode($encodedToken, true);
-
-            if ($lastId === false || !is_numeric($lastId)) {
-                return $this->json([
-                    'error' => 'Invalid token',
-                ], JsonResponse::HTTP_BAD_REQUEST);
-            }
-        }
-
         try {
-            $queryBuilder = $this->productRepository->createQueryBuilder('product')
-                                                    ->orderBy('product.id', 'DESC')
-                                                    ->setMaxResults($quantity + 1);
-
-            if ($lastId) {
-                $queryBuilder->andWhere('product.id < :lastId')
-                             ->setParameter('lastId', $lastId);
-            }
-
-            $products = $queryBuilder->getQuery()->getResult();
-            $hasMore  = count($products) > $quantity;
-
-            if ($hasMore) {
-                array_pop($products);
-            }
-
-            $lastProduct = end($products);
-            $token = ($hasMore && $lastProduct) ? base64_encode((string) $lastProduct->getId()) // We send a token back to the clientside and expect
-                                                : null;                                         // them to send it back if they want more products.
-        } catch (\Throwable $th) {
+            $products = $this->productService->getProducts();
+        } catch (DatabaseException $error) {
             return new JsonResponse([
-                'error' => $th->getMessage(),
-            ], $th->getCode() ?: JsonResponse::HTTP_BAD_REQUEST);
+                'error' => 'An unexpected error has occured',
+            ], $error->getCode() ?: JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (PayloadException $error) {
+            return new JsonResponse([
+                'error' => $error->getMessage(),
+            ], $error->getCode() ?: JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        return $this->json([
-            'token'    => $token,
-            'products' => $products,
-        ]);
+        return $this->json($products, JsonResponse::HTTP_OK);
     }
 
-    #[Route('/product/{slug}', name: 'api_product', methods: ['GET'])]
-    public function getProduct(string $slug): JsonResponse
+    #[Route('/product', name: 'api_product', methods: ['GET'])]
+    public function getProduct(): JsonResponse
     {
         try {
             $product = $this->productService->getProduct();
-        } catch (\Throwable $th) {
+        } catch (DatabaseException $error) {
             return new JsonResponse([
-                'error' => $th->getMessage(),
-            ], $th->getCode());
+                'error' => 'An unexpected error has occured',
+            ], $error->getCode() ?: JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (PayloadException $error) {
+            return new JsonResponse([
+                'error' => $error->getMessage(),
+            ], $error->getCode() ?: JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        return $this->json($product);
+        return $this->json($product, JsonResponse::HTTP_OK);
     }
 }

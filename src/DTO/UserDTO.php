@@ -2,9 +2,10 @@
 
 namespace App\DTO;
 
+use App\DTO\AbstractDTO;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class UserDTO {
+class UserDTO extends AbstractDTO {
     #[Assert\Email(message: 'Invalid email format')]
     #[Assert\NotNull(message: 'An email is required')]
     private ?string $email = null;
