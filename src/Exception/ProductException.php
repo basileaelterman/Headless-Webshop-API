@@ -12,6 +12,6 @@ class ProductException extends Exception
         int $code             = JsonResponse::HTTP_INTERNAL_SERVER_ERROR, // 500
         ?\Throwable $previous = null,
     ) {
-        parent::__construct($message, $coden, $previous);
+        parent::__construct($message, $code, $previous);
     }
 }

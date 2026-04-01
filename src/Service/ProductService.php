@@ -3,16 +3,18 @@
 namespace App\Service;
 
 use App\DTO\PayloadDTO;
+use App\Entity\Product;
 use App\Exception\DatabaseException;
 use App\Exception\PayloadException;
 use App\Repository\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Uid\Uuid;
 
 class ProductService {
-    public $MIN_QUANTITY = 1;
-    public $MAX_QUANTITY = 50;
+    public const MIN_QUANTITY = 1;
+    public const MAX_QUANTITY = 50;
 
     public function __construct(
         private readonly ProductRepository $productRepository,
@@ -55,7 +57,7 @@ class ProductService {
         return $product;
     }
 
-    public function getProducts(Request $request): ?ArrayCollection
+    public function getProducts(Request $request): ?array
     {
         $payload = json_decode($request->getContent(), true) ?? null;
 
@@ -67,6 +69,7 @@ class ProductService {
         $minPrice = $payload['minPrice'] ?? $payload['min'] ?? null;
         $maxPrice = $payload['maxPrice'] ?? $payload['max'] ?? null;
         $quantity = $payload['quantity'] ?? null;
+        $query    = $payload['query'] ?? $payload['q'] ?? null;
         $token    = $payload['token'] ?? null;
 
         // Validate input
@@ -75,6 +78,7 @@ class ProductService {
         $payloadDTO->setMinPrice($minPrice);
         $payloadDTO->setMaxPrice($maxPrice);
         $payloadDTO->setQuantity($quantity);
+        $payloadDTO->setQuery($query);
         $payloadDTO->setToken($token);
 
         $violations = $payloadDTO->getViolations();
@@ -92,8 +96,10 @@ class ProductService {
             $products = $this->getProductsInPriceRange($minPrice, $maxPrice, $quantity, $lastId);
         } else if ($category) {
             $products = $this->getProductsByCategory($category, $quantity, $lastId);
+        } else if ($query) {
+            $products = $this->getProductsByQuery($query, $quantity, $lastId);
         } else {
-            throw new PayloadException('No product identification method found in payload', JsonResponse::HTTP_BAD_REQUEST);
+            $products = $this->getLatestProducts($quantity, $lastId);
         }
 
         if ($products) {
@@ -145,7 +151,7 @@ class ProductService {
         $products = null;
 
         try {
-            $query = $this->createQueryBuilder('product')
+            $query = $this->productRepository->createQueryBuilder('product')
                           ->orderBy('product.id', 'DESC')
                           ->setMaxResults($quantity + 1)
                           ->andWhere('product.category = :category')
@@ -162,8 +168,7 @@ class ProductService {
             throw new DatabaseException($th->getMessage(), JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        return $products ? new ArrayCollection($products)
-                         : null;
+        return $products;
     }
 
     public function getProductsInPriceRange(float $minPrice, float $maxPrice, int $quantity, ?int $lastId = null): ?array
@@ -171,7 +176,7 @@ class ProductService {
         $products = null;
 
         try {
-            $query = $this->createQueryBuilder('product')
+            $query = $this->productRepository->createQueryBuilder('product')
                           ->orderBy('product.id', 'DESC')
                           ->setMaxResults($quantity + 1)
                           ->andWhere('product.price >= :minPrice')
@@ -190,7 +195,53 @@ class ProductService {
             throw new DatabaseException($th->getMessage(), JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        return $products ? new ArrayCollection($products)
-                         : null;
+        return $products;
+    }
+
+    public function getLatestProducts(int $quantity, ?int $lastId = null): ?array {
+        $products = null;
+
+        try {
+            $query = $this->productRepository->createQueryBuilder('product')
+                          ->orderBy('product.id', 'DESC')
+                          ->setMaxResults($quantity + 1);
+
+            if ($lastId) {
+                $query->andWhere('product.id < :lastId')
+                      ->setParameter('lastId', $lastId);
+            }
+
+            $products = $query->getQuery()
+                              ->getResult();
+        } catch (\Throwable $th) {
+            throw new DatabaseException($th->getMessage(), JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return $products;
+    }
+
+    public function getProductsByQuery(string $query, int $quantity, ?int $lastId): ?array
+    {
+        $products = null;
+
+        try {
+            $queryBuilder = $this->productRepository->createQueryBuilder('product')
+                                 ->andWhere('product.name LIKE :query')
+                                 ->setParameter('query', '%' . $query . '%')
+                                 ->orderBy('product.id', 'DESC')
+                                 ->setMaxResults($quantity + 1);
+
+            if ($lastId) {
+                $queryBuilder->andWhere('product.id < :lastId')
+                             ->setParameter('lastId', $lastId);
+            }
+
+            $products = $queryBuilder->getQuery()
+                                     ->getResult();
+        } catch (\Throwable $th) {
+            throw new DatabaseException($th->getMessage(), JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return $products;
     }
 }

@@ -19,57 +19,25 @@ class ProductController extends AbstractController
     ) {
     }
 
-    #[Route('/product', name: 'api_product', methods: ['GET'])]
-    public function getProduct(): JsonResponse
+    #[Route('/product', name: 'api_product', methods: ['POST'])]
+    public function getProduct(Request $request): JsonResponse
     {
-        try {
-            $product = $this->productService->getProduct();
+        $product = $this->productService->getProduct($request);
 
-            if (!$product) {
-                throw new ProductException('Product not found', JsonResponse::HTTP_NOT_FOUND);
-            }
-        } catch (DatabaseException $error) {
-            return new JsonResponse([
-                'error' => 'An unexpected error has occured',
-            ], $error->getCode() ?: JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
-        } catch (PayloadException $error) {
-            return new JsonResponse([
-                'error' => $error->getMessage(),
-            ], $error->getCode() ?: JsonResponse::HTTP_BAD_REQUEST);
-        } catch (ProductException $error) {
-            return new JsonResponse([
-                'error' => $error->getMessage(),
-            ], $error->getCode());
-        } catch (Throwable $error) {
-            return new JsonResponse([
-                'error' => 'An unknown error has occured',
-            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        if (!$product) {
+            throw new ProductException('Product not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         return $this->json($product, JsonResponse::HTTP_OK);
     }
 
-    #[Route('/products', name: 'api_products', methods: ['GET'])]
+    #[Route('/products', name: 'api_products', methods: ['POST'])]
     public function getProducts(Request $request): JsonResponse
     {
-        try {
-            $products = $this->productService->getProducts($request);
+        $products = $this->productService->getProducts($request);
 
-            if (!$product) {
-                throw new ProductException('Product not found', JsonResponse::HTTP_NOT_FOUND);
-            }
-        } catch (DatabaseException $error) {
-            return new JsonResponse([
-                'error' => 'An unexpected error has occured',
-            ], $error->getCode() ?: JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
-        } catch (PayloadException $error) {
-            return new JsonResponse([
-                'error' => $error->getMessage() ?: 'Invalid payload',
-            ], $error->getCode() ?: JsonResponse::HTTP_BAD_REQUEST);
-        } catch (Throwable $error) {
-            return new JsonResponse([
-                'error' => 'An unknown error has occured',
-            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        if (!$products) {
+            throw new ProductException('Product not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         return $this->json($products, JsonResponse::HTTP_OK);

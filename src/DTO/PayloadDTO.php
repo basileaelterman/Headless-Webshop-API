@@ -30,6 +30,18 @@ class PayloadDTO extends AbstractDTO {
     )]
     private ?int $quantity;
 
+    #[Assert\Type(
+        type: 'string',
+        message: 'Query must be a string',
+    )]
+    private ?string $query;
+
+    #[Assert\Type(
+        type: 'string',
+        message: 'Slug must be a string',
+    )]
+    private ?string $slug;
+
     #[Assert\Integer(message: 'Token is invalid')]
     #[Assert\GreaterThan(
         value: 0,
@@ -61,6 +73,20 @@ class PayloadDTO extends AbstractDTO {
     public function setQuantity(?int $quantity): static
     {
         $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function setQuery(?string $query): static
+    {
+        $this->query = $query;
+
+        return $this;
+    }
+
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug;
 
         return $this;
     }

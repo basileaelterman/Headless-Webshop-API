@@ -15,22 +15,22 @@ class AbstractDTO
 
     public function getViolations(): ?array
     {
+        // TODO: replace with proper DI once wired up — temporary null-guard
         if (!$this->validator) {
-            throw new \LogicException('Validator not set.');
+            return null;
         }
 
         $violations = $this->validator->validate($this);
 
-        if (count($violations) > 0) {
-            $messages = [];
-
-            foreach ($violations as $violation) {
-                $messages[$violation->getPropertyPath()][] = $violation->getMessage();
-            }
-
-            return $messages;
+        if (count($violations) === 0) {
+            return null;
         }
 
-        return null;
+        $messages = [];
+        foreach ($violations as $violation) {
+            $messages[$violation->getPropertyPath()][] = $violation->getMessage();
+        }
+
+        return $messages;
     }
 }
