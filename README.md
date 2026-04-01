@@ -1,4 +1,4 @@
-# Headless Webshop API
+# Webshop API
 
 **Important:** This is a personal project in order to learn how APIs work and to better understand security. I chose to make this with Symfony 8 (PHP) since it's very robust overall and a solid choice for large, complex APIs.
 
@@ -22,7 +22,7 @@ If you're curious to check, stress test or even tweak some things, feel free to 
 
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/basileaelterman/Headless-Webshop-API.git
+   git clone https://github.com/basileaelterman/webshop-api.git
    ```
    
 2. **Install dependencies:**
