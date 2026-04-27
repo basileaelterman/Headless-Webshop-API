@@ -1,6 +1,6 @@
 # Webshop API
 
-**Important:** This is a personal project in order to learn how APIs work and to better understand security. I chose to make this with Symfony 8 (PHP) since it's very robust overall and a solid choice for large, complex APIs.
+**Important:** This project is currently on pause due to me working on a different (now private) project that would make this project (and another) easier to manage and create.
 
 ---
 
